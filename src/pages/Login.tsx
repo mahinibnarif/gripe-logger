@@ -22,7 +22,7 @@ const Login = () => {
 
   useEffect(() => {
     if (!loading && user && userRole) {
-      navigate(userRole.role === "admin" ? "/admin" : "/student");
+      navigate(userRole.role === "admin" ? "/admin" : "/student", { replace: true });
     }
   }, [user, userRole, loading, navigate]);
 

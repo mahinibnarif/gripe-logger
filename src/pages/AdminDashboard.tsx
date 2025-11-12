@@ -42,7 +42,10 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/login");
+    // Small delay to ensure auth state fully clears
+    setTimeout(() => {
+      navigate("/login", { replace: true });
+    }, 100);
   };
 
   return (
