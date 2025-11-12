@@ -118,13 +118,21 @@ export const useAuth = () => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) {
+    
+    // Clear local state regardless of API response
+    setSession(null);
+    setUser(null);
+    setUserRole(null);
+    
+    // Only show error if it's not a "session not found" error
+    if (error && !error.message?.includes("session")) {
       toast({
         title: "Error",
         description: "Failed to sign out",
         variant: "destructive",
       });
     }
+    
     return { error };
   };
 
