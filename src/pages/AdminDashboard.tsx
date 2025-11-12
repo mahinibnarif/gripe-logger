@@ -9,11 +9,22 @@ import { AdminComplaintCard } from "@/components/AdminComplaintCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogOut, FileText, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 const AdminDashboard = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "in_progress" | "resolved">("all");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const { data: complaints, isLoading, refetch } = useQuery({
     queryKey: ["admin-complaints", statusFilter],
@@ -57,10 +68,26 @@ const AdminDashboard = () => {
             <FileText className="h-6 w-6" />
             <h1 className="text-2xl font-bold">Gripe Logger Admin</h1>
           </div>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Log out?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  You’ll be signed out and redirected to the login page.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleLogout}>Log out</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </header>
 

@@ -53,10 +53,10 @@ export const useAuth = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setUserRole(data);
+      setUserRole(data ?? null);
     } catch (error: any) {
       console.error("Error fetching user role:", error);
       toast({
@@ -118,12 +118,23 @@ export const useAuth = () => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    
+
+    // Aggressively clear any locally stored auth to avoid stale sessions
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith("sb-") || key.includes("supabase.auth.token")) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (_) {}
+
     // Clear local state regardless of API response
     setSession(null);
     setUser(null);
     setUserRole(null);
-    
+
     // Only show error if it's not a "session not found" error
     if (error && !error.message?.includes("session")) {
       toast({
@@ -132,7 +143,7 @@ export const useAuth = () => {
         variant: "destructive",
       });
     }
-    
+
     return { error };
   };
 
