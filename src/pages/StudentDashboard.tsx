@@ -148,7 +148,7 @@ const StudentDashboard = () => {
               </>
             ) : complaints && complaints.length > 0 ? (
               complaints.map((complaint) => (
-                <ComplaintCard key={complaint.id} complaint={complaint} />
+                <ComplaintCard key={complaint.id} complaint={complaint} onDelete={refetch} />
               ))
             ) : (
               <Card className="p-12 text-center">
