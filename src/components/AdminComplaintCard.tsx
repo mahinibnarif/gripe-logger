@@ -21,7 +21,7 @@ interface AdminComplaintCardProps {
     status: string;
     resolution_note: string | null;
     created_at: string;
-    profiles: any;
+    profiles?: { name?: string; email?: string } | null;
   };
   onUpdate: () => void;
 }

@@ -31,7 +31,7 @@ const AdminDashboard = () => {
     queryFn: async () => {
       let query = supabase
         .from("complaints")
-        .select("*, profiles!complaints_student_id_fkey(name, email)")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (statusFilter !== "all") {
