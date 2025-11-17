@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       complaints: {
         Row: {
+          assigned_to: string | null
           category: string | null
           created_at: string
           description: string
@@ -28,6 +29,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           category?: string | null
           created_at?: string
           description: string
@@ -40,6 +42,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           category?: string | null
           created_at?: string
           description?: string

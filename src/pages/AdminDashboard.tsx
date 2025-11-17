@@ -31,11 +31,34 @@ const AdminDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
-        .select("*, profiles(name, email)")
+        .select("*, profiles!complaints_student_id_fkey(name, email)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+
+      // Fetch assigned admin profiles separately
+      const assignedIds = data
+        .filter(c => c.assigned_to)
+        .map(c => c.assigned_to as string);
+
+      if (assignedIds.length > 0) {
+        const { data: assignedProfiles } = await supabase
+          .from("profiles")
+          .select("id, name, email")
+          .in("id", assignedIds);
+
+        // Map assigned profiles to complaints
+        const complaintsWithAssigned = data.map(complaint => ({
+          ...complaint,
+          assigned_admin: complaint.assigned_to
+            ? assignedProfiles?.find(p => p.id === complaint.assigned_to)
+            : null,
+        }));
+
+        return complaintsWithAssigned;
+      }
+
+      return data.map(c => ({ ...c, assigned_admin: null }));
     },
   });
 
