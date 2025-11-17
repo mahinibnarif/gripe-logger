@@ -34,7 +34,7 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
   const [status, setStatus] = useState(complaint.status);
   const displayStatus = complaint.status as "pending" | "in_progress" | "resolved";
   const [resolutionNote, setResolutionNote] = useState(complaint.resolution_note || "");
-  const [assignedTo, setAssignedTo] = useState(complaint.assigned_to || "");
+  const [assignedTo, setAssignedTo] = useState(complaint.assigned_to || "unassigned");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -68,7 +68,7 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
       .update({
         status,
         resolution_note: resolutionNote || null,
-        assigned_to: assignedTo || null,
+        assigned_to: assignedTo === "unassigned" ? null : assignedTo,
       })
       .eq("id", complaint.id);
 
@@ -155,7 +155,7 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
                       <SelectValue placeholder="Unassigned" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {adminUsers?.map((admin) => (
                         <SelectItem key={admin.id} value={admin.id}>
                           {admin.name} ({admin.email})
