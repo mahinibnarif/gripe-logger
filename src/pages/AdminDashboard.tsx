@@ -26,30 +26,29 @@ const AdminDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "in_progress" | "resolved">("all");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const { data: complaints, isLoading, refetch } = useQuery({
-    queryKey: ["admin-complaints", statusFilter],
+  const { data: allComplaints, isLoading, refetch } = useQuery({
+    queryKey: ["admin-complaints"],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("complaints")
         .select("*, profiles(name, email)")
         .order("created_at", { ascending: false });
 
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
   });
 
   const stats = {
-    total: complaints?.length || 0,
-    pending: complaints?.filter((c) => c.status === "pending").length || 0,
-    inProgress: complaints?.filter((c) => c.status === "in_progress").length || 0,
-    resolved: complaints?.filter((c) => c.status === "resolved").length || 0,
+    total: allComplaints?.length || 0,
+    pending: allComplaints?.filter((c) => c.status === "pending").length || 0,
+    inProgress: allComplaints?.filter((c) => c.status === "in_progress").length || 0,
+    resolved: allComplaints?.filter((c) => c.status === "resolved").length || 0,
   };
+
+  const complaints = statusFilter === "all" 
+    ? allComplaints 
+    : allComplaints?.filter((c) => c.status === statusFilter);
 
   const handleLogout = async () => {
     await signOut();
