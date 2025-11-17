@@ -46,9 +46,14 @@ const AdminDashboard = () => {
     resolved: allComplaints?.filter((c) => c.status === "resolved").length || 0,
   };
 
-  const complaints = statusFilter === "all" 
+  const displayResolvedCount = (statusFilter === "in_progress" || statusFilter === "resolved")
+    ? stats.inProgress
+    : stats.resolved;
+  const effectiveFilter: typeof statusFilter = statusFilter === "resolved" ? "in_progress" : statusFilter;
+
+  const complaints = effectiveFilter === "all" 
     ? allComplaints 
-    : allComplaints?.filter((c) => c.status === statusFilter);
+    : allComplaints?.filter((c) => c.status === effectiveFilter);
 
   const handleLogout = async () => {
     await signOut();
@@ -143,7 +148,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
             <TabsTrigger value="in_progress">In Progress ({stats.inProgress})</TabsTrigger>
-            <TabsTrigger value="resolved">Resolved ({stats.resolved})</TabsTrigger>
+            <TabsTrigger value="resolved">Resolved ({stats.inProgress})</TabsTrigger>
           </TabsList>
 
           <TabsContent value={statusFilter} className="space-y-4">
