@@ -17,6 +17,7 @@ const complaintSchema = z.object({
     .min(10, "Description must be at least 10 characters")
     .max(1000, "Description must be less than 1000 characters"),
   category: z.string().optional(),
+  priority: z.string().optional(),
 });
 
 interface ComplaintFormProps {
@@ -27,6 +28,7 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [priority, setPriority] = useState("medium");
   const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
@@ -36,7 +38,7 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
     e.preventDefault();
     setErrors({});
 
-    const result = complaintSchema.safeParse({ title, description, category });
+    const result = complaintSchema.safeParse({ title, description, category, priority });
     if (!result.success) {
       const fieldErrors: { title?: string; description?: string } = {};
       result.error.errors.forEach((error) => {
@@ -53,6 +55,7 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
       title: title.trim(),
       description: description.trim(),
       category: category || null,
+      priority: priority || "medium",
       student_id: user?.id,
     });
 
@@ -75,6 +78,7 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
     setTitle("");
     setDescription("");
     setCategory("");
+    setPriority("medium");
     onSuccess();
   };
 
@@ -108,6 +112,21 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
               <SelectItem value="Hostel">Hostel</SelectItem>
               <SelectItem value="Food">Food</SelectItem>
               <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger id="priority">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
             </SelectContent>
           </Select>
         </div>

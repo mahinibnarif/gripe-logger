@@ -1,17 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
+import { PriorityBadge } from "./PriorityBadge";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Settings, UserCog } from "lucide-react";
+import { Settings, UserCog, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { ComplaintComments } from "./ComplaintComments";
+import { ComplaintAttachments } from "./ComplaintAttachments";
 
 interface AdminComplaintCardProps {
   complaint: {
@@ -20,6 +24,7 @@ interface AdminComplaintCardProps {
     description: string;
     category: string | null;
     status: string;
+    priority: string;
     resolution_note: string | null;
     created_at: string;
     assigned_to: string | null;
@@ -27,12 +32,15 @@ interface AdminComplaintCardProps {
     assigned_admin?: { name: string; email: string } | null;
   };
   onUpdate: () => void;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardProps) => {
+export const AdminComplaintCard = ({ complaint, onUpdate, isSelected, onSelect }: AdminComplaintCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState(complaint.status);
   const displayStatus = complaint.status as "pending" | "in_progress" | "resolved";
+  const [priority, setPriority] = useState(complaint.priority);
   const [resolutionNote, setResolutionNote] = useState(complaint.resolution_note || "");
   const [assignedTo, setAssignedTo] = useState(complaint.assigned_to || "unassigned");
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +56,6 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
 
       if (error) throw error;
 
-      // Fetch profiles for admin users
       const userIds = data.map(r => r.user_id);
       const { data: profiles, error: profileError } = await supabase
         .from("profiles")
@@ -67,6 +74,7 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
       .from("complaints")
       .update({
         status,
+        priority,
         resolution_note: resolutionNote || null,
         assigned_to: assignedTo === "unassigned" ? null : assignedTo,
       })
@@ -96,30 +104,41 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm text-muted-foreground">
-                {complaint.profiles?.name || "Unknown Student"}
-              </span>
-              <span className="text-xs text-muted-foreground">({complaint.profiles?.email})</span>
-            </div>
-            <CardTitle className="text-xl mb-2">{complaint.title}</CardTitle>
-            <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={displayStatus} />
-              {complaint.category && (
-                <Badge variant="secondary" className="text-xs">
-                  {complaint.category}
-                </Badge>
-              )}
-              {complaint.assigned_admin && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <UserCog className="h-3 w-3" />
-                  {complaint.assigned_admin.name}
-                </Badge>
-              )}
-              <span className="text-xs text-muted-foreground">
-                {format(new Date(complaint.created_at), "MMM d, yyyy 'at' h:mm a")}
-              </span>
+          <div className="flex items-start gap-3 flex-1">
+            {onSelect && (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelect(complaint.id, checked as boolean)}
+                onClick={(e) => e.stopPropagation()}
+                className="mt-1"
+              />
+            )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-muted-foreground">
+                  {complaint.profiles?.name || "Unknown Student"}
+                </span>
+                <span className="text-xs text-muted-foreground">({complaint.profiles?.email})</span>
+              </div>
+              <CardTitle className="text-xl mb-2">{complaint.title}</CardTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                <StatusBadge status={displayStatus} />
+                <PriorityBadge priority={priority as "low" | "medium" | "high" | "urgent"} />
+                {complaint.category && (
+                  <Badge variant="secondary" className="text-xs">
+                    {complaint.category}
+                  </Badge>
+                )}
+                {complaint.assigned_admin && (
+                  <Badge variant="outline" className="text-xs flex items-center gap-1">
+                    <UserCog className="h-3 w-3" />
+                    {complaint.assigned_admin.name}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(complaint.created_at), "MMM d, yyyy 'at' h:mm a")}
+                </span>
+              </div>
             </div>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -129,60 +148,97 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
                 Manage
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Manage Complaint</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={status} onValueChange={(v: any) => setStatus(v)}>
-                    <SelectTrigger id="status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Student</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {complaint.profiles?.name} ({complaint.profiles?.email})
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Description</h4>
+                    <p className="text-sm text-muted-foreground">{complaint.description}</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={status} onValueChange={(v: any) => setStatus(v)}>
+                      <SelectTrigger id="status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="priority">Priority</Label>
+                    <Select value={priority} onValueChange={setPriority}>
+                      <SelectTrigger id="priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="assigned-to">Assign To</Label>
+                    <Select value={assignedTo} onValueChange={setAssignedTo}>
+                      <SelectTrigger id="assigned-to">
+                        <SelectValue placeholder="Unassigned" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {adminUsers?.map((admin) => (
+                          <SelectItem key={admin.id} value={admin.id}>
+                            {admin.name} ({admin.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="resolution">Resolution Notes</Label>
+                    <Textarea
+                      id="resolution"
+                      placeholder="Add notes about the resolution..."
+                      value={resolutionNote}
+                      onChange={(e) => setResolutionNote(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleUpdate} disabled={isLoading}>
+                      {isLoading ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="assigned-to">Assign To</Label>
-                  <Select value={assignedTo} onValueChange={setAssignedTo}>
-                    <SelectTrigger id="assigned-to">
-                      <SelectValue placeholder="Unassigned" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {adminUsers?.map((admin) => (
-                        <SelectItem key={admin.id} value={admin.id}>
-                          {admin.name} ({admin.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="border-t pt-6">
+                  <ComplaintAttachments complaintId={complaint.id} canUpload={false} />
                 </div>
 
-                <div>
-                  <Label htmlFor="resolution">Resolution Notes</Label>
-                  <Textarea
-                    id="resolution"
-                    placeholder="Add notes about the resolution..."
-                    value={resolutionNote}
-                    onChange={(e) => setResolutionNote(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdate} disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Save Changes"}
-                  </Button>
+                <div className="border-t pt-6">
+                  <ComplaintComments complaintId={complaint.id} />
                 </div>
               </div>
             </DialogContent>
@@ -192,15 +248,27 @@ export const AdminComplaintCard = ({ complaint, onUpdate }: AdminComplaintCardPr
       <CardContent className="space-y-4">
         <div>
           <h4 className="text-sm font-semibold mb-1">Description</h4>
-          <p className="text-sm text-muted-foreground">{complaint.description}</p>
+          <p className="text-sm text-muted-foreground line-clamp-2">{complaint.description}</p>
         </div>
 
         {complaint.resolution_note && (
           <div className="pt-4 border-t border-border">
             <h4 className="text-sm font-semibold mb-1 text-status-resolved">Resolution Notes</h4>
-            <p className="text-sm text-muted-foreground">{complaint.resolution_note}</p>
+            <p className="text-sm text-muted-foreground line-clamp-2">{complaint.resolution_note}</p>
           </div>
         )}
+
+        <div className="pt-4 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsOpen(true)}
+            className="w-full"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            View Details, Comments & Attachments
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -14,6 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      complaint_attachments: {
+        Row: {
+          complaint_id: string
+          content_type: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          complaint_id: string
+          content_type: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          complaint_id?: string
+          content_type?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_attachments_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaint_comments: {
+        Row: {
+          complaint_id: string
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          complaint_id: string
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          complaint_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_comments_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaints: {
         Row: {
           assigned_to: string | null
@@ -21,6 +97,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          priority: string
           resolution_note: string | null
           resolved_by: string | null
           status: string
@@ -34,6 +111,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          priority?: string
           resolution_note?: string | null
           resolved_by?: string | null
           status?: string
@@ -47,6 +125,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          priority?: string
           resolution_note?: string | null
           resolved_by?: string | null
           status?: string

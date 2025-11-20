@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminComplaintCard } from "@/components/AdminComplaintCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, FileText, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { LogOut, FileText, Clock, CheckCircle, AlertCircle, CheckSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +22,16 @@ import {
   AlertDialogFooter,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 const AdminDashboard = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "in_progress" | "resolved">("all");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [selectedComplaints, setSelectedComplaints] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [bulkAssignTo, setBulkAssignTo] = useState<string>("");
 
   const { data: allComplaints, isLoading, refetch } = useQuery({
     queryKey: ["admin-complaints"],
