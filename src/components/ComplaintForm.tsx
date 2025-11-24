@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { DialogHeader, DialogTitle } from "./ui/dialog";
+import { Upload, X, FileIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const complaintSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(100, "Title must be less than 100 characters"),
@@ -31,8 +33,40 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
   const [priority, setPriority] = useState("medium");
   const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    
+    // Check file sizes
+    const oversizedFiles = newFiles.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: "Error",
+        description: `Some files are too large. Maximum size is 5MB per file.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+    e.target.value = "";
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,17 +85,16 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
 
     setIsLoading(true);
 
-    const { error } = await supabase.from("complaints").insert({
+    const { data: complaint, error } = await supabase.from("complaints").insert({
       title: title.trim(),
       description: description.trim(),
       category: category || null,
       priority: priority || "medium",
       student_id: user?.id,
-    });
-
-    setIsLoading(false);
+    }).select().single();
 
     if (error) {
+      setIsLoading(false);
       toast({
         title: "Error",
         description: "Failed to submit complaint",
@@ -69,6 +102,31 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
       });
       return;
     }
+
+    // Upload files if any
+    if (selectedFiles.length > 0 && complaint) {
+      for (const file of selectedFiles) {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${user?.id}/${complaint.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("complaint-attachments")
+          .upload(fileName, file);
+
+        if (!uploadError) {
+          await supabase.from("complaint_attachments").insert({
+            complaint_id: complaint.id,
+            file_name: file.name,
+            file_path: fileName,
+            file_size: file.size,
+            content_type: file.type,
+            uploaded_by: user?.id,
+          });
+        }
+      }
+    }
+
+    setIsLoading(false);
 
     toast({
       title: "Success",
@@ -79,6 +137,7 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
     setDescription("");
     setCategory("");
     setPriority("medium");
+    setSelectedFiles([]);
     onSuccess();
   };
 
@@ -142,6 +201,56 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
             required
           />
           {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Attachments (Optional)</Label>
+          <div className="space-y-3">
+            <Button type="button" variant="outline" size="sm" disabled={isLoading} asChild>
+              <label className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                Add Files
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx,.txt"
+                />
+              </label>
+            </Button>
+            
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2">
+                {selectedFiles.map((file, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileIcon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveFile(index)}
+                          className="text-destructive hover:text-destructive flex-shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
