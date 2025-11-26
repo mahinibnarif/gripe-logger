@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import { DialogHeader, DialogTitle } from "./ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Upload, X, FileIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -145,6 +145,9 @@ export const ComplaintForm = ({ onSuccess }: ComplaintFormProps) => {
     <>
       <DialogHeader>
         <DialogTitle>Submit New Complaint</DialogTitle>
+        <DialogDescription>
+          Fill out the form below to submit your complaint. You can attach files to provide more details.
+        </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4 mt-4">
         <div className="space-y-2">
